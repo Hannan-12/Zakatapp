@@ -3,6 +3,13 @@ import AuthGate from "../lib/AuthGate";
 import { supabase } from "../lib/supabaseClient";
 import { formatPKR, formatDateTime, CATEGORY_LABELS, METHOD_LABELS } from "../lib/format";
 
+const CATEGORY_FILTERS = [
+  { value: "all", label: "تمام" },
+  { value: "zakat", label: "زکوٰۃ" },
+  { value: "sadqa", label: "صدقہ" },
+  { value: "general", label: "عمومی" },
+];
+
 function DashboardPage() {
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,20 +73,20 @@ function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-primary">ڈیش بورڈ</h1>
-          <a href="/" className="text-sm text-primary underline">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-2xl text-primary">ڈیش بورڈ</h1>
+          <a href="/" className="text-sm text-gold underline underline-offset-4">
             + نئی رسید
           </a>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <TotalCard label="کل وصولی" value={totals.all} highlight />
-          <TotalCard label="زکوٰۃ" value={totals.zakat} />
-          <TotalCard label="صدقہ" value={totals.sadqa} />
-          <TotalCard label="عمومی" value={totals.general} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gold/25 border border-gold/30 rounded-xl mb-6 overflow-hidden">
+          <TotalCell label="کل وصولی" value={totals.all} highlight />
+          <TotalCell label="زکوٰۃ" value={totals.zakat} />
+          <TotalCell label="صدقہ" value={totals.sadqa} />
+          <TotalCell label="عمومی" value={totals.general} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -88,65 +95,99 @@ function DashboardPage() {
             placeholder="عطیہ دہندہ کے نام یا رسید نمبر سے تلاش کریں"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="flex-1 border border-gold/30 bg-card rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">تمام اقسام</option>
-            <option value="zakat">زکوٰۃ</option>
-            <option value="sadqa">صدقہ</option>
-            <option value="general">عمومی</option>
-          </select>
           <button
             onClick={exportCSV}
-            className="bg-primary text-white rounded-lg px-4 py-2 font-medium hover:opacity-90 whitespace-nowrap"
+            className="bg-primary text-white rounded-lg px-4 py-2 font-medium hover:bg-primary-dark transition-colors whitespace-nowrap"
           >
             CSV ایکسپورٹ کریں
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        <div className="flex gap-2 mb-5 overflow-x-auto">
+          {CATEGORY_FILTERS.map((c) => (
+            <button
+              key={c.value}
+              data-active={categoryFilter === c.value}
+              onClick={() => setCategoryFilter(c.value)}
+              className="pill rounded-full px-4 py-1.5 text-sm whitespace-nowrap"
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-card rounded-xl shadow-sm border border-gold/30 overflow-hidden">
           {loading ? (
-            <p className="p-6 text-gray-500">لوڈ ہو رہا ہے...</p>
+            <p className="p-6 text-ink/50">لوڈ ہو رہا ہے...</p>
           ) : filtered.length === 0 ? (
-            <p className="p-6 text-gray-500">کوئی رسید نہیں ملی۔</p>
+            <p className="p-6 text-ink/50">کوئی رسید نہیں ملی۔</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-100">
-                  <th className="px-4 py-3">رسید نمبر</th>
-                  <th className="px-4 py-3">تاریخ</th>
-                  <th className="px-4 py-3">عطیہ دہندہ</th>
-                  <th className="px-4 py-3">قسم</th>
-                  <th className="px-4 py-3">طریقہ</th>
-                  <th className="px-4 py-3 text-right">رقم</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile: stacked ledger cards */}
+              <div className="sm:hidden divide-y divide-gold/15">
                 {filtered.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs">{r.receipt_no}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{formatDateTime(r.created_at)}</td>
-                    <td className="px-4 py-3">{r.donor_name}</td>
-                    <td className="px-4 py-3">{CATEGORY_LABELS[r.category]}</td>
-                    <td className="px-4 py-3 capitalize">{METHOD_LABELS[r.method] || r.method}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatPKR(r.amount)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <a
-                        href={`/receipt/${r.id}`}
-                        className="text-primary underline text-xs whitespace-nowrap"
-                      >
-                        دیکھیں
-                      </a>
-                    </td>
-                  </tr>
+                  <a
+                    key={r.id}
+                    href={`/receipt/${r.id}`}
+                    className="ledger-row block px-4 py-3"
+                  >
+                    <div className="flex justify-between items-baseline mb-1">
+                      <span className="font-medium">{r.donor_name}</span>
+                      <span className="figures text-sm font-semibold text-primary">
+                        {formatPKR(r.amount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline text-xs text-ink/55">
+                      <span>
+                        {CATEGORY_LABELS[r.category]} · {METHOD_LABELS[r.method] || r.method}
+                      </span>
+                      <span className="figures">{formatDateTime(r.created_at)}</span>
+                    </div>
+                  </a>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop / tablet: ledger table */}
+              <table className="w-full text-sm hidden sm:table">
+                <thead>
+                  <tr className="text-right text-ink/50 border-b border-gold/20">
+                    <th className="px-4 py-3 font-normal">رسید نمبر</th>
+                    <th className="px-4 py-3 font-normal">تاریخ</th>
+                    <th className="px-4 py-3 font-normal">عطیہ دہندہ</th>
+                    <th className="px-4 py-3 font-normal">قسم</th>
+                    <th className="px-4 py-3 font-normal">طریقہ</th>
+                    <th className="px-4 py-3 font-normal">رقم</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r) => (
+                    <tr key={r.id} className="ledger-row border-b border-gold/10">
+                      <td className="px-4 py-3 figures text-xs">{r.receipt_no}</td>
+                      <td className="px-4 py-3 figures whitespace-nowrap">
+                        {formatDateTime(r.created_at)}
+                      </td>
+                      <td className="px-4 py-3">{r.donor_name}</td>
+                      <td className="px-4 py-3">{CATEGORY_LABELS[r.category]}</td>
+                      <td className="px-4 py-3">{METHOD_LABELS[r.method] || r.method}</td>
+                      <td className="px-4 py-3 figures font-medium">
+                        {formatPKR(r.amount)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <a
+                          href={`/receipt/${r.id}`}
+                          className="text-gold underline underline-offset-4 text-xs whitespace-nowrap"
+                        >
+                          دیکھیں
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>
@@ -154,15 +195,11 @@ function DashboardPage() {
   );
 }
 
-function TotalCard({ label, value, highlight }) {
+function TotalCell({ label, value, highlight }) {
   return (
-    <div
-      className={`rounded-xl p-4 border ${
-        highlight ? "bg-primary text-white border-primary" : "bg-white border-gray-100"
-      }`}
-    >
-      <p className={`text-xs ${highlight ? "text-white/80" : "text-gray-500"}`}>{label}</p>
-      <p className="text-lg font-bold mt-1">{formatPKR(value)}</p>
+    <div className={`min-w-0 p-4 text-center ${highlight ? "bg-primary text-white" : "bg-card"}`}>
+      <p className={`text-xs mb-1 ${highlight ? "text-white/70" : "text-ink/50"}`}>{label}</p>
+      <p className="figures font-semibold text-base sm:text-lg truncate">{formatPKR(value)}</p>
     </div>
   );
 }

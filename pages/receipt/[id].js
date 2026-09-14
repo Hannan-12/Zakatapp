@@ -43,49 +43,56 @@ function ReceiptPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-md mx-auto">
         <div className="flex justify-between items-center mb-4 no-print">
-          <a href="/" className="text-sm text-primary underline">
+          <a href="/" className="text-sm text-gold underline underline-offset-4">
             ← نئی رسید
           </a>
-          <a href="/dashboard" className="text-sm text-primary underline">
+          <a href="/dashboard" className="text-sm text-gold underline underline-offset-4">
             ڈیش بورڈ
           </a>
         </div>
 
-        <div className="print-area bg-white rounded-xl shadow-md border border-gray-100 p-6">
-          <div className="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
-            <h2 className="text-lg font-bold text-primary">عطیہ کی رسید</h2>
-            <p className="text-xs text-gray-500">رسید نمبر: {receipt.receipt_no}</p>
+        <div className="perforated-top bg-card rounded-t-2xl" />
+        <div className="print-area bg-card border-x border-gold/30 shadow-md p-6">
+          <div className="text-center border-b-2 border-dashed border-gold/40 pb-4 mb-4">
+            <span className="text-gold text-lg">۞</span>
+            <h2 className="text-xl text-primary mt-1">عطیہ کی رسید</h2>
+            <p className="text-xs text-ink/50 mt-1 figures">رسید نمبر: {receipt.receipt_no}</p>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <Row label="تاریخ" value={formatDate(receipt.created_at)} />
+          <div className="space-y-2.5 text-sm">
+            <Row label="تاریخ" value={formatDate(receipt.created_at)} figures />
             <Row label="عطیہ دہندہ" value={receipt.donor_name} />
-            {receipt.phone && <Row label="فون" value={receipt.phone} />}
+            {receipt.phone && <Row label="فون" value={receipt.phone} figures />}
             <Row label="قسم" value={CATEGORY_LABELS[receipt.category]} />
             <Row label="طریقہ" value={METHOD_LABELS[receipt.method] || receipt.method} />
             {receipt.note && <Row label="نوٹ" value={receipt.note} />}
           </div>
 
-          <div className="mt-4 pt-4 border-t border-dashed border-gray-300 text-center">
-            <p className="text-xs text-gray-500">موصولہ رقم</p>
-            <p className="text-2xl font-bold text-primary">{formatPKR(receipt.amount)}</p>
+          <div className="mt-5 pt-5 border-t-2 border-dashed border-gold/40 text-center">
+            <p className="text-xs text-ink/50">موصولہ رقم</p>
+            <p className="text-3xl font-semibold text-primary figures mt-1">
+              {formatPKR(receipt.amount)}
+            </p>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-6">
+          <p className="text-center text-xs text-ink/45 mt-6 leading-relaxed">
             آپ کے عطیہ پر جزاک اللہ خیر۔
           </p>
 
-          <p className="text-center text-base font-bold text-primary mt-4 pt-4 border-t border-dashed border-gray-300">
-            سید دستگیر شاہ
-          </p>
+          <div className="flex justify-center mt-6">
+            <div className="seal">
+              <span className="text-sm font-medium tracking-wide">سید دستگیر شاہ</span>
+            </div>
+          </div>
         </div>
+        <div className="perforated-bottom bg-card border-x border-gold/30 rounded-b-2xl" />
 
         <button
           onClick={() => window.print()}
-          className="no-print w-full mt-4 bg-primary text-white rounded-lg py-2.5 font-medium hover:opacity-90"
+          className="no-print w-full mt-5 bg-primary text-white rounded-lg py-3 font-medium hover:bg-primary-dark transition-colors"
         >
           پرنٹ / PDF کے طور پر محفوظ کریں
         </button>
@@ -94,11 +101,11 @@ function ReceiptPage() {
   );
 }
 
-function Row({ label, value }) {
+function Row({ label, value, figures }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-800 capitalize">{value}</span>
+    <div className="flex justify-between gap-3">
+      <span className="text-ink/50">{label}</span>
+      <span className={`font-medium text-ink text-left ${figures ? "figures" : ""}`}>{value}</span>
     </div>
   );
 }

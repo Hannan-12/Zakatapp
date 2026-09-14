@@ -2,16 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --paper: #f5efde;
+  --card: #fffcf5;
+  --ink: #23281f;
+  --primary: #0e4536;
+  --primary-dark: #082e24;
+  --gold: #a9782e;
+  --line: rgba(169, 120, 46, 0.28);
+}
+
+html {
+  background: var(--paper);
+}
+
+h1,
+h2 {
+  line-height: 2;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-urdu), serif;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(169, 120, 46, 0.07) 0,
+      rgba(169, 120, 46, 0.07) 1px,
+      transparent 1px,
+      transparent 34px
+    ),
+    radial-gradient(circle at 20% 10%, rgba(14, 69, 54, 0.05), transparent 45%);
+  min-height: 100vh;
+}
+
+/* Amounts, dates, phone numbers, receipt codes: fixed LTR + tabular figures */
+.figures {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Torn / perforated receipt edge, top and bottom */
+.perforated-top,
+.perforated-bottom {
+  height: 14px;
+  background-image: radial-gradient(circle at 7px 7px, var(--paper) 5px, transparent 5.5px);
+  background-size: 14px 14px;
+  background-repeat: repeat-x;
+  background-position: 0 -7px;
+}
+.perforated-bottom {
+  background-position: 0 7px;
+  transform: scaleY(-1);
+}
+
+/* Ledger row striping */
+.ledger-row:nth-child(even) {
+  background-color: rgba(169, 120, 46, 0.045);
+}
+
+/* Segmented pill toggle */
+.pill {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--card);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pill[data-active="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* Authorizing seal / stamp */
+.seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--gold);
+  border-radius: 9999px;
+  padding: 0.85rem 1.1rem;
+  transform: rotate(-4deg);
+  color: var(--gold);
+  mix-blend-mode: multiply;
+  position: relative;
+}
+.seal::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed var(--gold);
+  border-radius: 9999px;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 @media print {
+  body {
+    background-image: none;
+  }
   .no-print {
     display: none !important;
   }
   .print-area {
     box-shadow: none !important;
-    border: 1px solid #000 !important;
+    border: 1px solid var(--ink) !important;
   }
 }
