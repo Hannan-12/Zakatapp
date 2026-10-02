@@ -89,6 +89,11 @@ function DashboardPage() {
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-8 h-8 rounded-full shadow-sm" />
+          <span className="text-sm text-gold">بنیادِ مدرسہ فیضانِ علم</span>
+        </div>
+
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl text-primary">ڈیش بورڈ</h1>
           <a href="/" className="text-sm text-gold underline underline-offset-4">
