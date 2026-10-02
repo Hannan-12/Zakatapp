@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import QRCode from "qrcode";
 import AuthGate from "../../lib/AuthGate";
 import { supabase } from "../../lib/supabaseClient";
 import { formatPKR, formatDate, CATEGORY_LABELS, METHOD_LABELS } from "../../lib/format";
@@ -11,6 +12,8 @@ function ReceiptPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +34,41 @@ function ReceiptPage() {
     }
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !id) return;
+    QRCode.toDataURL(`${window.location.origin}/receipt/${id}`, {
+      margin: 1,
+      width: 160,
+      color: { dark: "#0E4536", light: "#FFFCF5" },
+    })
+      .then(setQrDataUrl)
+      .catch(() => {});
+  }, [id]);
+
+  async function handleShare() {
+    const url = `${window.location.origin}/receipt/${id}`;
+    const shareData = {
+      title: "رسید",
+      text: receipt ? `رسید نمبر: ${receipt.receipt_no}` : "رسید",
+      url,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // user cancelled the share sheet — not an error
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMessage("لنک کاپی ہو گیا");
+      setTimeout(() => setShareMessage(""), 2500);
+    } catch (err) {
+      setShareMessage(url);
+    }
+  }
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">لوڈ ہو رہا ہے...</div>;
@@ -107,20 +145,34 @@ function ReceiptPage() {
             آپ کے عطیہ پر جزاک اللہ خیر۔
           </p>
 
-          <div className="flex justify-center mt-6">
+          <div className="flex items-center justify-between mt-6 gap-4">
             <div className="seal">
               <span className="text-sm font-medium tracking-wide">سید دستگیر شاہ</span>
             </div>
+            {qrDataUrl && (
+              <img src={qrDataUrl} alt="تصدیقی QR کوڈ" className="w-16 h-16 rounded-md border border-gold/30" />
+            )}
           </div>
         </div>
         <div className="perforated-bottom bg-card border-x border-gold/30 rounded-b-2xl" />
 
-        <button
-          onClick={() => window.print()}
-          className="no-print w-full mt-5 bg-primary text-white rounded-lg py-3 font-medium hover:bg-primary-dark transition-colors"
-        >
-          پرنٹ / PDF کے طور پر محفوظ کریں
-        </button>
+        <div className="no-print flex gap-3 mt-5">
+          <button
+            onClick={handleShare}
+            className="flex-1 bg-gold text-white rounded-lg py-3 font-medium hover:opacity-90 transition-opacity"
+          >
+            شیئر کریں
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex-1 bg-primary text-white rounded-lg py-3 font-medium hover:bg-primary-dark transition-colors"
+          >
+            پرنٹ / PDF
+          </button>
+        </div>
+        {shareMessage && (
+          <p className="no-print text-center text-sm text-ink/60 mt-2 break-all">{shareMessage}</p>
+        )}
       </div>
     </div>
   );
