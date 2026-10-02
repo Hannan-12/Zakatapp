@@ -138,3 +138,29 @@ alter table receipts add constraint receipts_category_check
 alter table receipt_items drop constraint if exists receipt_items_category_check;
 alter table receipt_items add constraint receipt_items_category_check
   check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general'));
+
+-- ============================================================
+-- Migration: expenses (money used/spent out of collected funds)
+-- category is nullable — an expense can be drawn from a specific
+-- fund (e.g. Zakat) or left unspecified for general running costs.
+-- Dashboard totals subtract these from collected amounts to show
+-- the remaining balance per category and overall.
+-- ============================================================
+
+create table if not exists expenses (
+  id uuid primary key default gen_random_uuid(),
+  category text check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general')),
+  amount numeric not null check (amount > 0),
+  note text,
+  created_at timestamptz not null default now()
+);
+
+alter table expenses enable row level security;
+
+drop policy if exists "Allow anon read expenses" on expenses;
+create policy "Allow anon read expenses" on expenses
+  for select using (true);
+
+drop policy if exists "Allow anon insert expenses" on expenses;
+create policy "Allow anon insert expenses" on expenses
+  for insert with check (true);
