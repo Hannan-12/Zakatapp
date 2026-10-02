@@ -90,8 +90,8 @@ function DashboardPage() {
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col items-center gap-2 mb-5">
-          <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-16 h-16 rounded-full shadow-md" />
-          <span className="text-base text-gold">بنیادِ مدرسہ فیضانِ علم</span>
+          <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-28 h-28 rounded-full shadow-md" />
+          <span className="text-lg text-gold">بنیادِ مدرسہ فیضانِ علم</span>
         </div>
 
         <div className="flex items-center justify-between mb-5">
