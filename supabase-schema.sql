@@ -66,3 +66,58 @@ where category is not null
   and not exists (
     select 1 from receipt_items where receipt_items.receipt_id = receipts.id
   );
+
+-- ============================================================
+-- create_receipt(): insert a receipt and all its category line
+-- items in one atomic transaction. The app used to do this as two
+-- separate REST calls, which could leave an orphan receipt (no
+-- items) if the second call failed partway through.
+-- ============================================================
+
+create or replace function create_receipt(
+  p_receipt_no text,
+  p_donor_name text,
+  p_donor_address text,
+  p_phone text,
+  p_method text,
+  p_note text,
+  p_items jsonb -- [{"category": "zakat", "amount": 1000}, ...]
+) returns receipts
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_receipt receipts;
+  v_total numeric;
+  v_category text;
+  v_item jsonb;
+begin
+  if jsonb_array_length(p_items) = 0 then
+    raise exception 'At least one category amount is required';
+  end if;
+
+  select coalesce(sum((item->>'amount')::numeric), 0) into v_total
+  from jsonb_array_elements(p_items) as item;
+
+  if v_total <= 0 then
+    raise exception 'Total amount must be greater than zero';
+  end if;
+
+  v_category := case when jsonb_array_length(p_items) = 1 then p_items->0->>'category' else null end;
+
+  insert into receipts (receipt_no, donor_name, donor_address, phone, category, amount, method, note)
+  values (p_receipt_no, p_donor_name, p_donor_address, p_phone, v_category, v_total, p_method, p_note)
+  returning * into v_receipt;
+
+  for v_item in select * from jsonb_array_elements(p_items)
+  loop
+    insert into receipt_items (receipt_id, category, amount)
+    values (v_receipt.id, v_item->>'category', (v_item->>'amount')::numeric);
+  end loop;
+
+  return v_receipt;
+end;
+$$;
+
+grant execute on function create_receipt(text, text, text, text, text, text, jsonb) to anon;

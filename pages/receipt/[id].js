@@ -61,7 +61,8 @@ function ReceiptPage() {
         <div className="perforated-top bg-card rounded-t-2xl" />
         <div className="print-area bg-card border-x border-gold/30 shadow-md p-6">
           <div className="text-center border-b-2 border-dashed border-gold/40 pb-4 mb-4">
-            <span className="text-gold text-lg">۞</span>
+            <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-12 h-12 rounded-full mx-auto shadow-sm" />
+            <p className="text-gold text-sm mt-2">بنیادِ مدرسہ فیضانِ علم</p>
             <h2 className="text-xl text-primary mt-1">عطیہ کی رسید</h2>
             <p className="text-xs text-ink/50 mt-1 figures">رسید نمبر: {receipt.receipt_no}</p>
           </div>

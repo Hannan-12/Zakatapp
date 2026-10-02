@@ -67,34 +67,17 @@ function IndexPage() {
     try {
       const receiptNo = "R-" + Date.now().toString().slice(-8);
 
-      const { data, error: insertError } = await supabase
-        .from("receipts")
-        .insert([
-          {
-            receipt_no: receiptNo,
-            donor_name: form.donor_name || "Anonymous",
-            donor_address: form.donor_address || null,
-            phone: form.phone || null,
-            category: selected.length === 1 ? selected[0] : null,
-            amount: total,
-            method: form.method,
-            note: form.note || null,
-          },
-        ])
-        .select()
-        .single();
+      const { data, error: rpcError } = await supabase.rpc("create_receipt", {
+        p_receipt_no: receiptNo,
+        p_donor_name: form.donor_name || "Anonymous",
+        p_donor_address: form.donor_address || null,
+        p_phone: form.phone || null,
+        p_method: form.method,
+        p_note: form.note || null,
+        p_items: selected.map((c) => ({ category: c, amount: Number(amounts[c]) })),
+      });
 
-      if (insertError) throw insertError;
-
-      const { error: itemsError } = await supabase.from("receipt_items").insert(
-        selected.map((c) => ({
-          receipt_id: data.id,
-          category: c,
-          amount: Number(amounts[c]),
-        }))
-      );
-
-      if (itemsError) throw itemsError;
+      if (rpcError) throw rpcError;
 
       router.push(`/receipt/${data.id}`);
     } catch (err) {

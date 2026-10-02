@@ -1,11 +1,11 @@
 {
-  "name": "Zakat & Sadqa Register",
-  "short_name": "Zakat Register",
+  "name": "بنیادِ مدرسہ فیضانِ علم - زکوٰۃ و صدقہ رجسٹر",
+  "short_name": "فیضانِ علم رجسٹر",
   "description": "Receipt register for Zakat, Sadqa and general donations",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f5132",
+  "theme_color": "#0E4536",
   "icons": [
     {
       "src": "/icon-192.png",
