@@ -82,11 +82,11 @@ function ReceiptPage() {
     );
   }
 
-  const isMulti = items.length > 1;
+  const lineItems = items.length > 0 ? items : [{ id: "total", category: receipt.category, amount: receipt.amount }];
 
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-xl mx-auto">
         <div className="flex justify-between items-center mb-4 no-print">
           <a href="/" className="text-sm text-gold underline underline-offset-4">
             ← نئی رسید
@@ -96,65 +96,97 @@ function ReceiptPage() {
           </a>
         </div>
 
-        <div className="perforated-top bg-card rounded-t-2xl" />
-        <div className="print-area bg-card border-x border-gold/30 shadow-md p-6">
-          <div className="text-center border-b-2 border-dashed border-gold/40 pb-4 mb-4">
-            <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-20 h-20 rounded-xl mx-auto shadow-sm" />
-            <p className="text-gold text-sm mt-2">بنیادِ مدرسہ فیضانِ علم</p>
-            <h2 className="text-xl text-primary mt-1">عطیہ کی رسید</h2>
-            <p className="text-xs text-ink/50 mt-1 figures">رسید نمبر: {receipt.receipt_no}</p>
-          </div>
-
-          <div className="space-y-2.5 text-sm">
-            <Row label="تاریخ" value={formatDate(receipt.created_at)} figures />
-            <Row label="عطیہ دہندہ" value={receipt.donor_name} />
-            {receipt.donor_address && <Row label="پتہ" value={receipt.donor_address} />}
-            {receipt.phone && <Row label="فون" value={receipt.phone} figures />}
-            {!isMulti && (
-              <Row
-                label="قسم"
-                value={CATEGORY_LABELS[receipt.category] || (items[0] && CATEGORY_LABELS[items[0].category])}
-              />
-            )}
-            <Row label="طریقہ" value={METHOD_LABELS[receipt.method] || receipt.method} />
-            {receipt.note && <Row label="نوٹ" value={receipt.note} />}
-          </div>
-
-          {isMulti && (
-            <div className="mt-4 pt-4 border-t-2 border-dashed border-gold/40">
-              <p className="text-xs text-ink/50 mb-2">تفصیل</p>
-              <div className="space-y-1.5 text-sm">
-                {items.map((it) => (
-                  <div key={it.id} className="flex justify-between">
-                    <span className="text-ink/70">{CATEGORY_LABELS[it.category]}</span>
-                    <span className="figures font-medium text-left">{formatPKR(it.amount)}</span>
-                  </div>
-                ))}
+        <div className="print-area bg-card border-2 border-gold/30 rounded-lg shadow-md p-5">
+          {/* Header: org identity + QR */}
+          <div className="flex items-start justify-between gap-3 pb-4 border-b-2 border-gold/30">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="بنیادِ مدرسہ فیضانِ علم" className="w-14 h-14 rounded-lg shadow-sm" />
+              <div>
+                <p className="text-gold text-sm">بنیادِ مدرسہ فیضانِ علم</p>
+                <h2 className="text-lg text-primary mt-0.5">عطیہ کی رسید</h2>
               </div>
+            </div>
+            {qrDataUrl && (
+              <img src={qrDataUrl} alt="تصدیقی QR کوڈ" className="w-16 h-16 rounded-md border border-gold/30 shrink-0" />
+            )}
+          </div>
+
+          {/* Receipt meta */}
+          <div className="grid grid-cols-2 gap-3 py-4 border-b-2 border-gold/30 text-sm">
+            <div>
+              <p className="text-ink/50 text-xs mb-1">رسید نمبر</p>
+              <p className="figures font-medium text-ink">{receipt.receipt_no}</p>
+            </div>
+            <div className="text-left">
+              <p className="text-ink/50 text-xs mb-1">تاریخ</p>
+              <p className="figures font-medium text-ink">{formatDate(receipt.created_at)}</p>
+            </div>
+          </div>
+
+          {/* Donor information */}
+          <div className="border-2 border-gold/30 rounded-md p-3 my-4">
+            <p className="text-xs text-gold mb-2">عطیہ دہندہ کی معلومات</p>
+            <div className="space-y-1.5 text-sm">
+              <Row label="نام" value={receipt.donor_name} />
+              {receipt.donor_address && <Row label="پتہ" value={receipt.donor_address} />}
+              {receipt.phone && <Row label="فون" value={receipt.phone} figures />}
+            </div>
+          </div>
+
+          {/* Donation line items */}
+          <div className="border-2 border-gold/30 rounded-md overflow-hidden my-4">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-primary/5 text-ink/60">
+                  <th className="border border-gold/25 px-3 py-2 font-normal w-10">#</th>
+                  <th className="border border-gold/25 px-3 py-2 font-normal">قسم</th>
+                  <th className="border border-gold/25 px-3 py-2 font-normal">طریقہ</th>
+                  <th className="border border-gold/25 px-3 py-2 font-normal">رقم</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems.map((it, i) => (
+                  <tr key={it.id}>
+                    <td className="border border-gold/25 px-3 py-2 text-center figures">{i + 1}</td>
+                    <td className="border border-gold/25 px-3 py-2">
+                      {CATEGORY_LABELS[it.category] || "—"}
+                    </td>
+                    <td className="border border-gold/25 px-3 py-2">
+                      {METHOD_LABELS[receipt.method] || receipt.method}
+                    </td>
+                    <td className="border border-gold/25 px-3 py-2 figures font-medium">
+                      {formatPKR(it.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {receipt.note && (
+            <div className="text-sm mb-4">
+              <Row label="نوٹ" value={receipt.note} />
             </div>
           )}
 
-          <div className="mt-5 pt-5 border-t-2 border-dashed border-gold/40 text-center">
-            <p className="text-xs text-ink/50">موصولہ رقم</p>
-            <p className="text-3xl font-semibold text-primary figures mt-1">
+          {/* Grand total */}
+          <div className="border-2 border-primary rounded-md p-4 text-center bg-primary/5 my-4">
+            <p className="text-xs text-ink/50">کل موصولہ رقم</p>
+            <p className="text-2xl font-semibold text-primary figures mt-1">
               {formatPKR(receipt.amount)}
             </p>
           </div>
 
-          <p className="text-center text-xs text-ink/45 mt-6 leading-relaxed">
+          <p className="text-center text-xs text-ink/45 leading-relaxed">
             آپ کے عطیہ پر جزاک اللہ خیر۔
           </p>
 
-          <div className="flex items-center justify-between mt-6 gap-4">
+          <div className="flex justify-center mt-5">
             <div className="seal">
               <span className="text-sm font-medium tracking-wide">سید دستگیر شاہ</span>
             </div>
-            {qrDataUrl && (
-              <img src={qrDataUrl} alt="تصدیقی QR کوڈ" className="w-16 h-16 rounded-md border border-gold/30" />
-            )}
           </div>
         </div>
-        <div className="perforated-bottom bg-card border-x border-gold/30 rounded-b-2xl" />
 
         <div className="no-print flex gap-3 mt-5">
           <button
