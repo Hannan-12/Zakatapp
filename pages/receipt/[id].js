@@ -86,7 +86,7 @@ function ReceiptPage() {
 
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4 no-print">
           <a href="/" className="text-sm text-gold underline underline-offset-4">
             ← نئی رسید
