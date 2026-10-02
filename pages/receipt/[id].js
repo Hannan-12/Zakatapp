@@ -8,6 +8,7 @@ function ReceiptPage() {
   const router = useRouter();
   const { id } = router.query;
   const [receipt, setReceipt] = useState(null);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -16,7 +17,7 @@ function ReceiptPage() {
     async function load() {
       const { data, error } = await supabase
         .from("receipts")
-        .select("*")
+        .select("*, receipt_items(*)")
         .eq("id", id)
         .single();
 
@@ -24,6 +25,7 @@ function ReceiptPage() {
         setNotFound(true);
       } else {
         setReceipt(data);
+        setItems(data.receipt_items || []);
       }
       setLoading(false);
     }
@@ -41,6 +43,8 @@ function ReceiptPage() {
       </div>
     );
   }
+
+  const isMulti = items.length > 1;
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -65,11 +69,31 @@ function ReceiptPage() {
           <div className="space-y-2.5 text-sm">
             <Row label="تاریخ" value={formatDate(receipt.created_at)} figures />
             <Row label="عطیہ دہندہ" value={receipt.donor_name} />
+            {receipt.donor_address && <Row label="پتہ" value={receipt.donor_address} />}
             {receipt.phone && <Row label="فون" value={receipt.phone} figures />}
-            <Row label="قسم" value={CATEGORY_LABELS[receipt.category]} />
+            {!isMulti && (
+              <Row
+                label="قسم"
+                value={CATEGORY_LABELS[receipt.category] || (items[0] && CATEGORY_LABELS[items[0].category])}
+              />
+            )}
             <Row label="طریقہ" value={METHOD_LABELS[receipt.method] || receipt.method} />
             {receipt.note && <Row label="نوٹ" value={receipt.note} />}
           </div>
+
+          {isMulti && (
+            <div className="mt-4 pt-4 border-t-2 border-dashed border-gold/40">
+              <p className="text-xs text-ink/50 mb-2">تفصیل</p>
+              <div className="space-y-1.5 text-sm">
+                {items.map((it) => (
+                  <div key={it.id} className="flex justify-between">
+                    <span className="text-ink/70">{CATEGORY_LABELS[it.category]}</span>
+                    <span className="figures font-medium text-left">{formatPKR(it.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 pt-5 border-t-2 border-dashed border-gold/40 text-center">
             <p className="text-xs text-ink/50">موصولہ رقم</p>

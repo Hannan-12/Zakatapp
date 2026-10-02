@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import AuthGate from "../lib/AuthGate";
 import { supabase } from "../lib/supabaseClient";
+import { formatPKR } from "../lib/format";
 
 const CATEGORIES = [
   { value: "zakat", label: "زکوٰۃ" },
@@ -19,12 +20,13 @@ function IndexPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     donor_name: "",
+    donor_address: "",
     phone: "",
-    category: "zakat",
-    amount: "",
     method: "cash",
     note: "",
   });
+  const [selected, setSelected] = useState(["zakat"]);
+  const [amounts, setAmounts] = useState({ zakat: "", sadqa: "", general: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,12 +34,32 @@ function IndexPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
+  function toggleCategory(value) {
+    setSelected((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  }
+
+  function updateAmount(category, value) {
+    setAmounts((a) => ({ ...a, [category]: value }));
+  }
+
+  const total = useMemo(
+    () => selected.reduce((sum, c) => sum + (Number(amounts[c]) || 0), 0),
+    [selected, amounts]
+  );
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
-    if (!form.amount || Number(form.amount) <= 0) {
-      setError("براہ کرم درست رقم درج کریں۔");
+    if (selected.length === 0) {
+      setError("کم از کم ایک قسم منتخب کریں۔");
+      return;
+    }
+    const invalid = selected.find((c) => !amounts[c] || Number(amounts[c]) <= 0);
+    if (invalid) {
+      setError("ہر منتخب قسم کے لیے درست رقم درج کریں۔");
       return;
     }
 
@@ -51,9 +73,10 @@ function IndexPage() {
           {
             receipt_no: receiptNo,
             donor_name: form.donor_name || "Anonymous",
+            donor_address: form.donor_address || null,
             phone: form.phone || null,
-            category: form.category,
-            amount: Number(form.amount),
+            category: selected.length === 1 ? selected[0] : null,
+            amount: total,
             method: form.method,
             note: form.note || null,
           },
@@ -62,6 +85,16 @@ function IndexPage() {
         .single();
 
       if (insertError) throw insertError;
+
+      const { error: itemsError } = await supabase.from("receipt_items").insert(
+        selected.map((c) => ({
+          receipt_id: data.id,
+          category: c,
+          amount: Number(amounts[c]),
+        }))
+      );
+
+      if (itemsError) throw itemsError;
 
       router.push(`/receipt/${data.id}`);
     } catch (err) {
@@ -99,6 +132,17 @@ function IndexPage() {
           </div>
 
           <div>
+            <label className="block text-sm text-ink/70 mb-1.5">پتہ (اختیاری)</label>
+            <input
+              type="text"
+              value={form.donor_address}
+              onChange={(e) => update("donor_address", e.target.value)}
+              className="w-full border-b-2 border-gold/30 bg-transparent px-1 py-2 focus:outline-none focus:border-primary transition-colors"
+              placeholder="عطیہ دہندہ کا پتہ"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm text-ink/70 mb-1.5">فون نمبر (اختیاری)</label>
             <input
               type="text"
@@ -111,14 +155,14 @@ function IndexPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-ink/70 mb-2">قسم</label>
+            <label className="block text-sm text-ink/70 mb-2">قسم (ایک سے زیادہ منتخب کر سکتے ہیں)</label>
             <div className="grid grid-cols-3 gap-2">
               {CATEGORIES.map((c) => (
                 <button
                   key={c.value}
                   type="button"
-                  data-active={form.category === c.value}
-                  onClick={() => update("category", c.value)}
+                  data-active={selected.includes(c.value)}
+                  onClick={() => toggleCategory(c.value)}
                   className="pill rounded-lg py-2 text-sm"
                 >
                   {c.label}
@@ -127,22 +171,52 @@ function IndexPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm text-ink/70 mb-1.5">رقم (روپے)</label>
-            <div className="flex items-center border-b-2 border-gold/30 focus-within:border-primary transition-colors">
-              <span className="text-gold text-sm ps-1 figures">Rs.</span>
-              <input
-                type="number"
-                min="1"
-                value={form.amount}
-                onChange={(e) => update("amount", e.target.value)}
-                dir="ltr"
-                className="w-full bg-transparent px-2 py-2 text-right figures text-lg focus:outline-none"
-                placeholder="5000"
-                required
-              />
+          {selected.length === 1 ? (
+            <div>
+              <label className="block text-sm text-ink/70 mb-1.5">رقم (روپے)</label>
+              <div className="flex items-center border-b-2 border-gold/30 focus-within:border-primary transition-colors">
+                <span className="text-gold text-sm ps-1 figures">Rs.</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={amounts[selected[0]]}
+                  onChange={(e) => updateAmount(selected[0], e.target.value)}
+                  dir="ltr"
+                  className="w-full bg-transparent px-2 py-2 text-right figures text-lg focus:outline-none"
+                  placeholder="5000"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          ) : selected.length > 1 ? (
+            <div>
+              <label className="block text-sm text-ink/70 mb-2">ہر قسم کے مطابق رقم (روپے)</label>
+              <div className="space-y-3">
+                {CATEGORIES.filter((c) => selected.includes(c.value)).map((c) => (
+                  <div key={c.value} className="flex items-center gap-3">
+                    <span className="text-sm text-ink/70 w-14 shrink-0">{c.label}</span>
+                    <div className="flex-1 flex items-center border-b-2 border-gold/30 focus-within:border-primary transition-colors">
+                      <span className="text-gold text-sm ps-1 figures">Rs.</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={amounts[c.value]}
+                        onChange={(e) => updateAmount(c.value, e.target.value)}
+                        dir="ltr"
+                        className="w-full bg-transparent px-2 py-2 text-right figures focus:outline-none"
+                        placeholder="0"
+                        required
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-2 border-t border-gold/20 text-sm">
+                  <span className="text-ink/70">میزان (کل رقم)</span>
+                  <span className="figures font-semibold text-primary">{formatPKR(total)}</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div>
             <label className="block text-sm text-ink/70 mb-2">ادائیگی کا طریقہ</label>

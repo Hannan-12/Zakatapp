@@ -10,6 +10,15 @@ const CATEGORY_FILTERS = [
   { value: "general", label: "عمومی" },
 ];
 
+function categoryText(receipt) {
+  const items = receipt.receipt_items || [];
+  if (items.length <= 1) {
+    const cat = receipt.category || items[0]?.category;
+    return CATEGORY_LABELS[cat] || "—";
+  }
+  return items.map((it) => CATEGORY_LABELS[it.category]).join(" + ");
+}
+
 function DashboardPage() {
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +33,7 @@ function DashboardPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("receipts")
-      .select("*")
+      .select("*, receipt_items(*)")
       .order("created_at", { ascending: false });
     if (!error) setReceipts(data || []);
     setLoading(false);
@@ -36,7 +45,9 @@ function DashboardPage() {
         !search ||
         r.donor_name?.toLowerCase().includes(search.toLowerCase()) ||
         r.receipt_no?.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = categoryFilter === "all" || r.category === categoryFilter;
+      const matchesCategory =
+        categoryFilter === "all" ||
+        (r.receipt_items || []).some((it) => it.category === categoryFilter);
       return matchesSearch && matchesCategory;
     });
   }, [receipts, search, categoryFilter]);
@@ -44,20 +55,23 @@ function DashboardPage() {
   const totals = useMemo(() => {
     const t = { zakat: 0, sadqa: 0, general: 0, all: 0 };
     receipts.forEach((r) => {
-      t[r.category] = (t[r.category] || 0) + Number(r.amount);
+      (r.receipt_items || []).forEach((it) => {
+        t[it.category] = (t[it.category] || 0) + Number(it.amount);
+      });
       t.all += Number(r.amount);
     });
     return t;
   }, [receipts]);
 
   function exportCSV() {
-    const header = ["رسید نمبر", "تاریخ", "عطیہ دہندہ", "فون", "قسم", "طریقہ", "رقم", "نوٹ"];
+    const header = ["رسید نمبر", "تاریخ", "عطیہ دہندہ", "پتہ", "فون", "قسم", "طریقہ", "رقم", "نوٹ"];
     const rows = filtered.map((r) => [
       r.receipt_no,
       new Date(r.created_at).toISOString(),
       r.donor_name,
+      r.donor_address || "",
       r.phone || "",
-      CATEGORY_LABELS[r.category],
+      categoryText(r),
       r.method,
       r.amount,
       (r.note || "").replace(/,/g, ";"),
@@ -141,7 +155,7 @@ function DashboardPage() {
                     </div>
                     <div className="flex justify-between items-baseline text-xs text-ink/55">
                       <span>
-                        {CATEGORY_LABELS[r.category]} · {METHOD_LABELS[r.method] || r.method}
+                        {categoryText(r)} · {METHOD_LABELS[r.method] || r.method}
                       </span>
                       <span className="figures">{formatDateTime(r.created_at)}</span>
                     </div>
@@ -170,7 +184,7 @@ function DashboardPage() {
                         {formatDateTime(r.created_at)}
                       </td>
                       <td className="px-4 py-3">{r.donor_name}</td>
-                      <td className="px-4 py-3">{CATEGORY_LABELS[r.category]}</td>
+                      <td className="px-4 py-3">{categoryText(r)}</td>
                       <td className="px-4 py-3">{METHOD_LABELS[r.method] || r.method}</td>
                       <td className="px-4 py-3 figures font-medium">
                         {formatPKR(r.amount)}
