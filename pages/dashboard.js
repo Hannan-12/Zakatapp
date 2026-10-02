@@ -326,9 +326,9 @@ function DashboardPage() {
 
 function TotalCell({ label, value, highlight }) {
   return (
-    <div className={`min-w-0 p-4 text-center ${highlight ? "bg-primary text-white" : "bg-card"}`}>
+    <div className={`min-w-0 p-3 sm:p-4 text-center ${highlight ? "bg-primary text-white" : "bg-card"}`}>
       <p className={`text-xs mb-1 ${highlight ? "text-white/70" : "text-ink/50"}`}>{label}</p>
-      <p className="figures font-semibold text-base sm:text-lg truncate">{formatPKR(value)}</p>
+      <p className="figures font-semibold text-sm sm:text-lg truncate">{formatPKR(value)}</p>
     </div>
   );
 }
