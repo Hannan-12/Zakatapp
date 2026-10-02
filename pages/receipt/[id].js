@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import QRCode from "qrcode";
 import AuthGate from "../../lib/AuthGate";
@@ -14,6 +14,9 @@ function ReceiptPage() {
   const [notFound, setNotFound] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [shareMessage, setShareMessage] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const printAreaRef = useRef(null);
+  const sealRef = useRef(null);
 
   useEffect(() => {
     if (!id) return;
@@ -47,26 +50,65 @@ function ReceiptPage() {
   }, [id]);
 
   async function handleShare() {
-    const url = `${window.location.origin}/receipt/${id}`;
-    const shareData = {
-      title: "رسید",
-      text: receipt ? `رسید نمبر: ${receipt.receipt_no}` : "رسید",
-      url,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        // user cancelled the share sheet — not an error
-      }
-      return;
+    if (!printAreaRef.current || sharing) return;
+    setSharing(true);
+    setShareMessage("");
+    // html2canvas mis-shapes connected Nastaliq script when letter-spacing,
+    // rotation, or blend-mode are applied, so plainify the seal just for
+    // the capture, then restore it.
+    const seal = sealRef.current;
+    const sealText = seal?.querySelector("span");
+    const sealTransform = seal?.style.transform;
+    const sealBlend = seal?.style.mixBlendMode;
+    const sealSpacing = sealText?.style.letterSpacing;
+    if (seal) {
+      seal.style.transform = "none";
+      seal.style.mixBlendMode = "normal";
     }
+    if (sealText) sealText.style.letterSpacing = "normal";
+
     try {
-      await navigator.clipboard.writeText(url);
-      setShareMessage("لنک کاپی ہو گیا");
-      setTimeout(() => setShareMessage(""), 2500);
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(printAreaRef.current, {
+        backgroundColor: "#FFFCF5",
+        scale: 2,
+        useCORS: true,
+      });
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("image generation failed");
+
+      const fileName = `receipt-${receipt.receipt_no}.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "رسید",
+          text: `رسید نمبر: ${receipt.receipt_no}`,
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        setShareMessage("تصویر ڈاؤن لوڈ ہو گئی");
+        setTimeout(() => setShareMessage(""), 2500);
+      }
     } catch (err) {
-      setShareMessage(url);
+      if (err?.name !== "AbortError") {
+        console.error(err);
+        setShareMessage("شیئر کرنے میں مسئلہ پیش آیا۔");
+      }
+    } finally {
+      if (seal) {
+        seal.style.transform = sealTransform || "";
+        seal.style.mixBlendMode = sealBlend || "";
+      }
+      if (sealText) sealText.style.letterSpacing = sealSpacing || "";
+      setSharing(false);
     }
   }
 
@@ -96,7 +138,7 @@ function ReceiptPage() {
           </a>
         </div>
 
-        <div className="print-area bg-card border-2 border-gold/30 rounded-lg shadow-md p-5">
+        <div ref={printAreaRef} className="print-area bg-card border-2 border-gold/30 rounded-lg shadow-md p-5">
           {/* Header: org identity + QR */}
           <div className="flex items-start justify-between gap-3 pb-4 border-b-2 border-gold/30">
             <div className="flex items-center gap-3">
@@ -182,7 +224,7 @@ function ReceiptPage() {
           </p>
 
           <div className="flex justify-center mt-5">
-            <div className="seal">
+            <div ref={sealRef} className="seal">
               <span className="text-sm font-medium tracking-wide">سید دستگیر شاہ</span>
             </div>
           </div>
@@ -191,9 +233,10 @@ function ReceiptPage() {
         <div className="no-print flex gap-3 mt-5">
           <button
             onClick={handleShare}
-            className="flex-1 bg-gold text-white rounded-lg py-3 font-medium hover:opacity-90 transition-opacity"
+            disabled={sharing}
+            className="flex-1 bg-gold text-white rounded-lg py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            شیئر کریں
+            {sharing ? "تیار ہو رہا ہے..." : "شیئر کریں"}
           </button>
           <button
             onClick={() => window.print()}
