@@ -121,3 +121,20 @@ end;
 $$;
 
 grant execute on function create_receipt(text, text, text, text, text, text, jsonb) to anon;
+
+-- ============================================================
+-- Migration: Fiqh-based donation categories
+-- Replaces the generic "sadqa" / "general" categories with the
+-- specific types used on the organization's receipt book: Zakat,
+-- Fitra, Ushr, Sadaqat-e-Wajiba, Sadaqat-e-Nafila. Old "sadqa" and
+-- "general" values are kept allowed so existing receipts remain
+-- valid; the app itself no longer offers them for new receipts.
+-- ============================================================
+
+alter table receipts drop constraint if exists receipts_category_check;
+alter table receipts add constraint receipts_category_check
+  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general'));
+
+alter table receipt_items drop constraint if exists receipt_items_category_check;
+alter table receipt_items add constraint receipt_items_category_check
+  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general'));

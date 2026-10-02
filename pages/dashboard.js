@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthGate from "../lib/AuthGate";
 import { supabase } from "../lib/supabaseClient";
-import { formatPKR, formatDateTime, CATEGORY_LABELS, METHOD_LABELS } from "../lib/format";
+import { formatPKR, formatDateTime, CATEGORIES, CATEGORY_LABELS, METHOD_LABELS } from "../lib/format";
 
-const CATEGORY_FILTERS = [
-  { value: "all", label: "تمام" },
-  { value: "zakat", label: "زکوٰۃ" },
-  { value: "sadqa", label: "صدقہ" },
-  { value: "general", label: "عمومی" },
-];
+const CATEGORY_FILTERS = [{ value: "all", label: "تمام" }, ...CATEGORIES];
 
 function categoryText(receipt) {
   const items = receipt.receipt_items || [];
@@ -53,7 +48,7 @@ function DashboardPage() {
   }, [receipts, search, categoryFilter]);
 
   const totals = useMemo(() => {
-    const t = { zakat: 0, sadqa: 0, general: 0, all: 0 };
+    const t = { all: 0 };
     receipts.forEach((r) => {
       (r.receipt_items || []).forEach((it) => {
         t[it.category] = (t[it.category] || 0) + Number(it.amount);
@@ -101,11 +96,11 @@ function DashboardPage() {
           </a>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gold/25 border border-gold/30 rounded-xl mb-6 overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-gold/25 border border-gold/30 rounded-xl mb-6 overflow-hidden">
           <TotalCell label="کل وصولی" value={totals.all} highlight />
-          <TotalCell label="زکوٰۃ" value={totals.zakat} />
-          <TotalCell label="صدقہ" value={totals.sadqa} />
-          <TotalCell label="عمومی" value={totals.general} />
+          {CATEGORIES.map((c) => (
+            <TotalCell key={c.value} label={c.label} value={totals[c.value] || 0} />
+          ))}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-4">

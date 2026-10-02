@@ -2,13 +2,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import AuthGate from "../lib/AuthGate";
 import { supabase } from "../lib/supabaseClient";
-import { formatPKR } from "../lib/format";
-
-const CATEGORIES = [
-  { value: "zakat", label: "زکوٰۃ" },
-  { value: "sadqa", label: "صدقہ" },
-  { value: "general", label: "عمومی" },
-];
+import { formatPKR, CATEGORIES } from "../lib/format";
 
 const METHODS = [
   { value: "cash", label: "نقد" },
@@ -26,7 +20,13 @@ function IndexPage() {
     note: "",
   });
   const [selected, setSelected] = useState(["zakat"]);
-  const [amounts, setAmounts] = useState({ zakat: "", sadqa: "", general: "" });
+  const [amounts, setAmounts] = useState({
+    zakat: "",
+    fitra: "",
+    ushr: "",
+    sadaqat_wajiba: "",
+    sadaqat_nafila: "",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -144,14 +144,14 @@ function IndexPage() {
 
           <div>
             <label className="block text-sm text-ink/70 mb-2">قسم (ایک سے زیادہ منتخب کر سکتے ہیں)</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CATEGORIES.map((c) => (
                 <button
                   key={c.value}
                   type="button"
                   data-active={selected.includes(c.value)}
                   onClick={() => toggleCategory(c.value)}
-                  className="pill rounded-lg py-2 text-sm"
+                  className="pill rounded-lg py-2 text-sm px-2"
                 >
                   {c.label}
                 </button>
@@ -182,7 +182,7 @@ function IndexPage() {
               <div className="space-y-3">
                 {CATEGORIES.filter((c) => selected.includes(c.value)).map((c) => (
                   <div key={c.value} className="flex items-center gap-3">
-                    <span className="text-sm text-ink/70 w-14 shrink-0">{c.label}</span>
+                    <span className="text-sm text-ink/70 w-24 shrink-0">{c.label}</span>
                     <div className="flex-1 flex items-center border-b-2 border-gold/30 focus-within:border-primary transition-colors">
                       <span className="text-gold text-sm ps-1 figures">Rs.</span>
                       <input
