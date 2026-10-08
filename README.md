@@ -27,6 +27,9 @@ printable receipt, and can see all receipts + totals on a dashboard.
    `supabase-schema.sql`, and run it. This creates/updates the receipt tables,
    adds the received-by field, and installs the dashboard clear-all action.
    Re-run this script after pulling schema updates.
+   If the dashboard says `Could not find the function public.clear_all_data`,
+   run `supabase-clear-all-migration.sql` in the SQL Editor to install just
+   that action and refresh Supabase's API schema cache.
 3. Go to **Project Settings → API**. Copy:
    - **Project URL** → this is `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public key** → this is `NEXT_PUBLIC_SUPABASE_ANON_KEY`
