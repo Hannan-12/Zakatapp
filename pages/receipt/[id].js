@@ -12,6 +12,7 @@ function ReceiptPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [shareMessage, setShareMessage] = useState("");
   const [sharing, setSharing] = useState(false);
@@ -29,6 +30,7 @@ function ReceiptPage() {
 
       if (error || !data) {
         setNotFound(true);
+        setLoadError(error?.message || "رسید اس نمبر سے موجود نہیں۔");
       } else {
         setReceipt(data);
         setItems(data.receipt_items || []);
@@ -119,7 +121,11 @@ function ReceiptPage() {
   if (notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>رسید نہیں ملی۔</p>
+        <div className="text-center space-y-3">
+          <p>رسید نہیں ملی۔</p>
+          {loadError && <p role="alert" className="text-sm text-ink/60">{loadError}</p>}
+          <a href="/dashboard" className="text-sm text-gold underline">ڈیش بورڈ پر واپس جائیں</a>
+        </div>
       </div>
     );
   }

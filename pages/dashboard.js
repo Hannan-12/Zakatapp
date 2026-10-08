@@ -25,6 +25,7 @@ function DashboardPage() {
   const [databaseStatus, setDatabaseStatus] = useState("");
   const [databaseBusy, setDatabaseBusy] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     load();
@@ -32,12 +33,18 @@ function DashboardPage() {
 
   async function load() {
     setLoading(true);
+    setLoadError("");
     const [receiptsRes, expensesRes] = await Promise.all([
       supabase.from("receipts").select("*, receipt_items(*)").order("created_at", { ascending: false }),
       supabase.from("expenses").select("*").order("created_at", { ascending: false }),
     ]);
     if (!receiptsRes.error) setReceipts(receiptsRes.data || []);
     if (!expensesRes.error) setExpenses(expensesRes.data || []);
+    const errors = [receiptsRes.error, expensesRes.error].filter(Boolean);
+    if (errors.length) {
+      console.error("Dashboard data could not be loaded:", errors);
+      setLoadError(errors.map((err) => err.message).join(" · "));
+    }
     setLoading(false);
   }
 
@@ -138,18 +145,20 @@ function DashboardPage() {
     if (!confirmed) return;
     setClearing(true);
     setDatabaseStatus("");
-    const { error } = await supabase.rpc("clear_all_data");
-    if (error) {
-      console.error(error);
-      setDatabaseStatus("ڈیٹا حذف نہیں ہو سکا۔ پہلے Supabase میں تازہ schema چلائیں۔");
-    } else {
+    try {
+      const { error } = await supabase.rpc("clear_all_data");
+      if (error) throw error;
       setReceipts([]);
       setExpenses([]);
       setSearch("");
       setCategoryFilter("all");
       setDatabaseStatus("تمام رسیدیں اور اخراجات حذف کر دیے گئے ہیں۔");
+    } catch (err) {
+      console.error("Could not clear database:", err);
+      setDatabaseStatus(`ڈیٹا حذف نہیں ہو سکا: ${err?.message || "ڈیٹا بیس سے رابطہ نہیں ہو سکا۔"} — Supabase میں supabase-schema.sql دوبارہ چلائیں۔`);
+    } finally {
+      setClearing(false);
     }
-    setClearing(false);
   }
 
   return (
@@ -255,6 +264,11 @@ function DashboardPage() {
         </div>
 
         <div className="bg-card rounded-xl shadow-sm border border-gold/30 overflow-hidden">
+          {loadError && (
+            <div role="alert" className="p-4 text-sm text-maroon border-b border-gold/20">
+              ڈیٹا لوڈ نہیں ہو سکا: {loadError}
+            </div>
+          )}
           {loading ? (
             <p className="p-6 text-ink/50">لوڈ ہو رہا ہے...</p>
           ) : view === "receipts" ? (

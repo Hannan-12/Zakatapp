@@ -80,11 +80,13 @@ function IndexPage() {
       });
 
       if (rpcError) throw rpcError;
+      const receipt = Array.isArray(data) ? data[0] : data;
+      if (!receipt?.id) throw new Error("Receipt was saved without an id. Check the create_receipt function in Supabase.");
 
-      router.push(`/receipt/${data.id}`);
+      await router.push(`/receipt/${receipt.id}`);
     } catch (err) {
       console.error(err);
-      setError("رسید محفوظ کرنے میں مسئلہ پیش آیا۔ دوبارہ کوشش کریں۔");
+      setError(`رسید محفوظ نہیں ہوئی: ${err?.message || "ڈیٹا بیس سے رابطہ نہیں ہو سکا۔"}`);
     } finally {
       setSaving(false);
     }
