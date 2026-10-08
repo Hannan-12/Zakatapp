@@ -26,6 +26,7 @@ function DashboardPage() {
   const [databaseBusy, setDatabaseBusy] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [deletingReceipt, setDeletingReceipt] = useState(null);
 
   useEffect(() => {
     load();
@@ -161,6 +162,30 @@ function DashboardPage() {
     }
   }
 
+  async function deleteReceipt(receipt) {
+    const confirmed = window.confirm(
+      `رسید ${receipt.receipt_no} مستقل طور پر حذف ہو جائے گی۔ کیا آپ واقعی حذف کرنا چاہتے ہیں؟`
+    );
+    if (!confirmed) return;
+
+    setDeletingReceipt(receipt.id);
+    setDatabaseStatus("");
+    try {
+      const { data, error } = await supabase.rpc("delete_receipt", {
+        p_receipt_id: receipt.id,
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error("Receipt was not found.");
+      setReceipts((current) => current.filter((item) => item.id !== receipt.id));
+      setDatabaseStatus(`رسید ${receipt.receipt_no} حذف کر دی گئی ہے۔`);
+    } catch (err) {
+      console.error("Could not delete receipt:", err);
+      setDatabaseStatus(`رسید حذف نہیں ہو سکی: ${err?.message || "ڈیٹا بیس سے رابطہ نہیں ہو سکا۔"} — Supabase میں supabase-delete-receipt-migration.sql چلائیں۔`);
+    } finally {
+      setDeletingReceipt(null);
+    }
+  }
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -279,20 +304,30 @@ function DashboardPage() {
                 {/* Mobile: stacked ledger cards */}
                 <div className="sm:hidden divide-y divide-gold/15">
                   {filteredReceipts.map((r) => (
-                    <a key={r.id} href={`/receipt/${r.id}`} className="ledger-row block px-4 py-3">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className="font-medium">{r.donor_name}</span>
-                        <span className="figures text-sm font-semibold text-primary">
-                          {formatPKR(r.amount)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-baseline text-xs text-ink/55">
-                        <span>
-                          {categoryText(r)} · {METHOD_LABELS[r.method] || r.method}
-                        </span>
-                        <span className="figures">{formatDateTime(r.created_at)}</span>
-                      </div>
-                    </a>
+                    <div key={r.id} className="ledger-row px-4 py-3">
+                      <a href={`/receipt/${r.id}`} className="block">
+                        <div className="flex justify-between items-baseline mb-1">
+                          <span className="font-medium">{r.donor_name}</span>
+                          <span className="figures text-sm font-semibold text-primary">
+                            {formatPKR(r.amount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-baseline text-xs text-ink/55">
+                          <span>
+                            {categoryText(r)} · {METHOD_LABELS[r.method] || r.method}
+                          </span>
+                          <span className="figures">{formatDateTime(r.created_at)}</span>
+                        </div>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => deleteReceipt(r)}
+                        disabled={deletingReceipt === r.id}
+                        className="mt-2 text-xs text-maroon underline underline-offset-4 disabled:opacity-50"
+                      >
+                        {deletingReceipt === r.id ? "حذف ہو رہی ہے..." : "رسید حذف کریں"}
+                      </button>
+                    </div>
                   ))}
                 </div>
 
@@ -306,7 +341,7 @@ function DashboardPage() {
                       <th className="px-4 py-3 font-normal">قسم</th>
                       <th className="px-4 py-3 font-normal">طریقہ</th>
                       <th className="px-4 py-3 font-normal">رقم</th>
-                      <th className="px-4 py-3"></th>
+                      <th className="px-4 py-3 font-normal">عمل</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,6 +362,14 @@ function DashboardPage() {
                           >
                             دیکھیں
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => deleteReceipt(r)}
+                            disabled={deletingReceipt === r.id}
+                            className="ms-3 text-maroon underline underline-offset-4 text-xs whitespace-nowrap disabled:opacity-50"
+                          >
+                            {deletingReceipt === r.id ? "حذف ہو رہی ہے..." : "حذف کریں"}
+                          </button>
                         </td>
                       </tr>
                     ))}

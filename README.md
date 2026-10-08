@@ -33,6 +33,8 @@ printable receipt, and can see all receipts + totals on a dashboard.
    that action and refresh Supabase's API schema cache.
    To add only the "کلی اختیار" category to an existing database, run
    `supabase-category-migration.sql` in the SQL Editor.
+   To enable deleting a single receipt from the dashboard, run
+   `supabase-delete-receipt-migration.sql` in the SQL Editor.
 3. Go to **Project Settings → API**. Copy:
    - **Project URL** → this is `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public key** → this is `NEXT_PUBLIC_SUPABASE_ANON_KEY`

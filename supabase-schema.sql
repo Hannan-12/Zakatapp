@@ -189,5 +189,24 @@ $$;
 revoke all on function clear_all_data() from public;
 grant execute on function clear_all_data() to anon;
 
+-- Delete one receipt. Its receipt_items are removed by the foreign-key cascade.
+create or replace function public.delete_receipt(p_receipt_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_deleted integer;
+begin
+  delete from public.receipts where id = p_receipt_id;
+  get diagnostics v_deleted = row_count;
+  return v_deleted = 1;
+end;
+$$;
+
+revoke all on function public.delete_receipt(uuid) from public;
+grant execute on function public.delete_receipt(uuid) to anon;
+
 -- Refresh PostgREST after installing or updating the RPC functions above.
 notify pgrst, 'reload schema';
