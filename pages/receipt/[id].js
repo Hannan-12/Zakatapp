@@ -226,7 +226,7 @@ function ReceiptPage() {
 
           <div className="flex justify-center mt-5">
             <div ref={sealRef} className="seal">
-              <span className="text-sm font-medium tracking-wide">سید دستگیر شاہ</span>
+              <span className="text-sm font-medium tracking-wide">سید غلام دستگیر شاہ</span>
             </div>
           </div>
         </div>
