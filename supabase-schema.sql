@@ -33,6 +33,7 @@ create policy "Allow anon insert" on receipts
 -- ============================================================
 
 alter table receipts add column if not exists donor_address text;
+alter table receipts add column if not exists received_by text;
 
 -- A receipt can now split its total across more than one category
 -- (e.g. Rs. 5,000 zakat + Rs. 2,000 sadqa in a single receipt).
@@ -78,6 +79,7 @@ create or replace function create_receipt(
   p_receipt_no text,
   p_donor_name text,
   p_donor_address text,
+  p_received_by text,
   p_phone text,
   p_method text,
   p_note text,
@@ -106,8 +108,8 @@ begin
 
   v_category := case when jsonb_array_length(p_items) = 1 then p_items->0->>'category' else null end;
 
-  insert into receipts (receipt_no, donor_name, donor_address, phone, category, amount, method, note)
-  values (p_receipt_no, p_donor_name, p_donor_address, p_phone, v_category, v_total, p_method, p_note)
+  insert into receipts (receipt_no, donor_name, donor_address, received_by, phone, category, amount, method, note)
+  values (p_receipt_no, p_donor_name, p_donor_address, p_received_by, p_phone, v_category, v_total, p_method, p_note)
   returning * into v_receipt;
 
   for v_item in select * from jsonb_array_elements(p_items)
@@ -120,7 +122,7 @@ begin
 end;
 $$;
 
-grant execute on function create_receipt(text, text, text, text, text, text, jsonb) to anon;
+grant execute on function create_receipt(text, text, text, text, text, text, text, jsonb) to anon;
 
 -- ============================================================
 -- Migration: Fiqh-based donation categories
@@ -164,3 +166,20 @@ create policy "Allow anon read expenses" on expenses
 drop policy if exists "Allow anon insert expenses" on expenses;
 create policy "Allow anon insert expenses" on expenses
   for insert with check (true);
+
+-- Dashboard action: clear all receipt and expense data in one transaction.
+-- receipt_items are removed by the receipts foreign key cascade.
+create or replace function clear_all_data()
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  delete from expenses;
+  delete from receipts;
+end;
+$$;
+
+revoke all on function clear_all_data() from public;
+grant execute on function clear_all_data() to anon;

@@ -15,6 +15,7 @@ function IndexPage() {
   const [form, setForm] = useState({
     donor_name: "",
     donor_address: "",
+    received_by: "",
     phone: "",
     method: "cash",
     note: "",
@@ -71,6 +72,7 @@ function IndexPage() {
         p_receipt_no: receiptNo,
         p_donor_name: form.donor_name || "Anonymous",
         p_donor_address: form.donor_address || null,
+        p_received_by: form.received_by || null,
         p_phone: form.phone || null,
         p_method: form.method,
         p_note: form.note || null,
@@ -139,6 +141,17 @@ function IndexPage() {
               dir="ltr"
               className="w-full border-b-2 border-gold/30 bg-transparent px-1 py-2 text-right figures focus:outline-none focus:border-primary transition-colors"
               placeholder="03XX-XXXXXXX"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-ink/70 mb-1.5">نامِ وصول کنندہ (اختیاری)</label>
+            <input
+              type="text"
+              value={form.received_by}
+              onChange={(e) => update("received_by", e.target.value)}
+              className="w-full border-b-2 border-gold/30 bg-transparent px-1 py-2 focus:outline-none focus:border-primary transition-colors"
+              placeholder="رقم وصول کرنے والے کا نام"
             />
           </div>
 

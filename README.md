@@ -12,7 +12,9 @@ printable receipt, and can see all receipts + totals on a dashboard.
   button uses the browser's print dialog, which lets you print on paper or save
   as a PDF file.
 - **Dashboard** (`/dashboard`) — table of every receipt, totals by category,
-  search, filter, and CSV export.
+  search, filter, CSV export, a database connection check, and a confirmed
+  clear-all action for receipts and expenses.
+- A daily Vercel cron calls `/api/keepalive` to keep the Supabase project active.
 - Protected by a simple shared passcode (not full user accounts — this is a
   single-user tool for the teacher).
 - Configured as a PWA so it can be added to a phone's home screen and opens
@@ -22,7 +24,9 @@ printable receipt, and can see all receipts + totals on a dashboard.
 
 1. Go to https://supabase.com and create a free account + new project.
 2. In your project, open **SQL Editor** → **New query**, paste the contents of
-   `supabase-schema.sql`, and run it. This creates the `receipts` table.
+   `supabase-schema.sql`, and run it. This creates/updates the receipt tables,
+   adds the received-by field, and installs the dashboard clear-all action.
+   Re-run this script after pulling schema updates.
 3. Go to **Project Settings → API**. Copy:
    - **Project URL** → this is `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public key** → this is `NEXT_PUBLIC_SUPABASE_ANON_KEY`

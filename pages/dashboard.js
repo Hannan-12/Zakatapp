@@ -22,6 +22,9 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [view, setView] = useState("receipts");
+  const [databaseStatus, setDatabaseStatus] = useState("");
+  const [databaseBusy, setDatabaseBusy] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     load();
@@ -82,13 +85,14 @@ function DashboardPage() {
   function exportCSV() {
     let header, rows, filenamePrefix;
     if (view === "receipts") {
-      header = ["رسید نمبر", "تاریخ", "عطیہ دہندہ", "پتہ", "فون", "قسم", "طریقہ", "رقم", "نوٹ"];
+      header = ["رسید نمبر", "تاریخ", "عطیہ دہندہ", "پتہ", "فون", "وصول کرنے والا", "قسم", "طریقہ", "رقم", "نوٹ"];
       rows = filteredReceipts.map((r) => [
         r.receipt_no,
         new Date(r.created_at).toISOString(),
         r.donor_name,
         r.donor_address || "",
         r.phone || "",
+        r.received_by || "",
         categoryText(r),
         r.method,
         r.amount,
@@ -115,6 +119,39 @@ function DashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function checkDatabase() {
+    setDatabaseBusy(true);
+    setDatabaseStatus("");
+    try {
+      const response = await fetch("/api/keepalive");
+      if (!response.ok) throw new Error("Database check failed");
+      setDatabaseStatus("ڈیٹا بیس فعال ہے۔");
+    } catch (err) {
+      setDatabaseStatus("ڈیٹا بیس سے رابطہ نہیں ہو سکا۔");
+    } finally {
+      setDatabaseBusy(false);
+    }
+  }
+
+  async function clearAllData() {
+    const confirmed = window.confirm("تمام رسیدیں، اخراجات اور ان کی تفصیلات مستقل طور پر حذف ہو جائیں گی۔ کیا آپ واقعی تمام ڈیٹا حذف کرنا چاہتے ہیں؟");
+    if (!confirmed) return;
+    setClearing(true);
+    setDatabaseStatus("");
+    const { error } = await supabase.rpc("clear_all_data");
+    if (error) {
+      console.error(error);
+      setDatabaseStatus("ڈیٹا حذف نہیں ہو سکا۔ پہلے Supabase میں تازہ schema چلائیں۔");
+    } else {
+      setReceipts([]);
+      setExpenses([]);
+      setSearch("");
+      setCategoryFilter("all");
+      setDatabaseStatus("تمام رسیدیں اور اخراجات حذف کر دیے گئے ہیں۔");
+    }
+    setClearing(false);
+  }
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -133,6 +170,24 @@ function DashboardPage() {
               + نئی رسید
             </a>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <button
+            onClick={checkDatabase}
+            disabled={databaseBusy}
+            className="text-sm border border-gold/40 rounded-lg px-3 py-2 text-primary disabled:opacity-50"
+          >
+            {databaseBusy ? "چیک ہو رہا ہے..." : "ڈیٹا بیس چیک کریں"}
+          </button>
+          <button
+            onClick={clearAllData}
+            disabled={clearing}
+            className="text-sm border border-maroon/40 rounded-lg px-3 py-2 text-maroon disabled:opacity-50"
+          >
+            {clearing ? "حذف ہو رہا ہے..." : "تمام ڈیٹا حذف کریں"}
+          </button>
+          {databaseStatus && <span role="status" className="text-sm text-ink/65">{databaseStatus}</span>}
         </div>
 
         {/* Overview: collected, spent, balance */}

@@ -172,6 +172,7 @@ function ReceiptPage() {
               <Row label="نام" value={receipt.donor_name} />
               {receipt.donor_address && <Row label="پتہ" value={receipt.donor_address} />}
               {receipt.phone && <Row label="فون" value={receipt.phone} figures />}
+              {receipt.received_by && <Row label="نامِ وصول کنندہ" value={receipt.received_by} />}
             </div>
           </div>
 
