@@ -4,7 +4,7 @@ import AuthGate from "../lib/AuthGate";
 import { supabase } from "../lib/supabaseClient";
 import { CATEGORIES } from "../lib/format";
 
-const CATEGORY_CHOICES = [{ value: "", label: "غیر مخصوص" }, ...CATEGORIES];
+const CATEGORY_CHOICES = CATEGORIES;
 
 function ExpensePage() {
   const router = useRouter();
@@ -20,6 +20,10 @@ function ExpensePage() {
 
     if (!amount || Number(amount) <= 0) {
       setError("براہ کرم درست رقم درج کریں۔");
+      return;
+    }
+    if (!category) {
+      setError("براہ کرم خرچ کی مد منتخب کریں۔");
       return;
     }
 
@@ -66,7 +70,7 @@ function ExpensePage() {
         >
           <div>
             <label className="block text-sm text-ink/70 mb-2">
-              کس مد سے خرچ ہوا (اختیاری)
+              کس مد سے خرچ ہوا
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CATEGORY_CHOICES.map((c) => (
