@@ -5,7 +5,7 @@ create table if not exists receipts (
   receipt_no text not null unique,
   donor_name text,
   phone text,
-  category text not null check (category in ('zakat', 'sadqa', 'general')),
+  category text not null check (category in ('zakat', 'sadqa', 'general', 'kulli_ikhtiyar')),
   amount numeric not null check (amount > 0),
   method text not null default 'cash' check (method in ('cash', 'bank_transfer', 'other')),
   note text,
@@ -45,7 +45,7 @@ alter table receipts alter column category drop not null;
 create table if not exists receipt_items (
   id uuid primary key default gen_random_uuid(),
   receipt_id uuid not null references receipts(id) on delete cascade,
-  category text not null check (category in ('zakat', 'sadqa', 'general')),
+  category text not null check (category in ('zakat', 'sadqa', 'general', 'kulli_ikhtiyar')),
   amount numeric not null check (amount > 0)
 );
 
@@ -135,11 +135,11 @@ grant execute on function create_receipt(text, text, text, text, text, text, tex
 
 alter table receipts drop constraint if exists receipts_category_check;
 alter table receipts add constraint receipts_category_check
-  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general'));
+  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'kulli_ikhtiyar', 'sadqa', 'general'));
 
 alter table receipt_items drop constraint if exists receipt_items_category_check;
 alter table receipt_items add constraint receipt_items_category_check
-  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general'));
+  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'kulli_ikhtiyar', 'sadqa', 'general'));
 
 -- ============================================================
 -- Migration: expenses (money used/spent out of collected funds)
@@ -151,11 +151,16 @@ alter table receipt_items add constraint receipt_items_category_check
 
 create table if not exists expenses (
   id uuid primary key default gen_random_uuid(),
-  category text check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'sadqa', 'general')),
+  category text check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'kulli_ikhtiyar', 'sadqa', 'general')),
   amount numeric not null check (amount > 0),
   note text,
   created_at timestamptz not null default now()
 );
+
+-- Keep existing databases in sync with the available receipt categories.
+alter table expenses drop constraint if exists expenses_category_check;
+alter table expenses add constraint expenses_category_check
+  check (category in ('zakat', 'fitra', 'ushr', 'sadaqat_wajiba', 'sadaqat_nafila', 'kulli_ikhtiyar', 'sadqa', 'general'));
 
 alter table expenses enable row level security;
 
@@ -176,10 +181,13 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  delete from expenses;
-  delete from receipts;
+  delete from expenses where id is not null;
+  delete from receipts where id is not null;
 end;
 $$;
 
 revoke all on function clear_all_data() from public;
 grant execute on function clear_all_data() to anon;
+
+-- Refresh PostgREST after installing or updating the RPC functions above.
+notify pgrst, 'reload schema';

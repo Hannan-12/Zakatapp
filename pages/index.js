@@ -27,6 +27,7 @@ function IndexPage() {
     ushr: "",
     sadaqat_wajiba: "",
     sadaqat_nafila: "",
+    kulli_ikhtiyar: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

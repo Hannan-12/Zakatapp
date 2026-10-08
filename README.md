@@ -26,10 +26,13 @@ printable receipt, and can see all receipts + totals on a dashboard.
 2. In your project, open **SQL Editor** → **New query**, paste the contents of
    `supabase-schema.sql`, and run it. This creates/updates the receipt tables,
    adds the received-by field, and installs the dashboard clear-all action.
-   Re-run this script after pulling schema updates.
+   Re-run this script after pulling schema updates. This updates category
+   constraints for receipts, receipt items, and expenses as well as RPCs.
    If the dashboard says `Could not find the function public.clear_all_data`,
    run `supabase-clear-all-migration.sql` in the SQL Editor to install just
    that action and refresh Supabase's API schema cache.
+   To add only the "کلی اختیار" category to an existing database, run
+   `supabase-category-migration.sql` in the SQL Editor.
 3. Go to **Project Settings → API**. Copy:
    - **Project URL** → this is `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public key** → this is `NEXT_PUBLIC_SUPABASE_ANON_KEY`

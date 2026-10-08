@@ -7,8 +7,8 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  delete from public.expenses;
-  delete from public.receipts;
+  delete from public.expenses where id is not null;
+  delete from public.receipts where id is not null;
 end;
 $$;
 
